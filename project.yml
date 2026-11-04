@@ -41,8 +41,9 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
         ENABLE_PREVIEWS: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "RunMotion Montre"
         INFOPLIST_KEY_NSHealthShareUsageDescription: "Lire l'état des entraînements programmés sur la montre"
-        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Create running exercice from runmotion"
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Créer sur la montre les séances de fractionné importées depuis RunMotion"
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -69,7 +70,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: runmotion_exporter/runmotion_exporterShare/runmotion_exporterShare.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: "RunMotion Montre"
         INFOPLIST_KEY_NSHealthShareUsageDescription: "Lire l'état des entraînements programmés sur la montre"
-        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Create running exercice from runmotion"
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Créer sur la montre les séances de fractionné importées depuis RunMotion"
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         SKIP_INSTALL: YES
   runmotion_exporterTests:
