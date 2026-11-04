@@ -1,0 +1,6 @@
+// Valeurs par défaut. Ne pas modifier ici : Signing.local.xcconfig est généré par
+// ../ios-updater (à partir de ios-updater.conf) et contient l'équipe et le bundle id réels.
+DEVELOPMENT_TEAM =
+BUNDLE_ID = com.example.runmotion-exporter
+
+#include? "Signing.local.xcconfig"

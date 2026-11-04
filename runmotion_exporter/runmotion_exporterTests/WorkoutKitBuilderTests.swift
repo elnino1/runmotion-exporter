@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import HealthKit
 import Testing
 import WorkoutKit
 @testable import runmotion_exporter
