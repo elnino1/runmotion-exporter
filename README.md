@@ -24,26 +24,19 @@ ligne.
 ### 1. Récupérer le projet
 
 ```bash
-git clone <url-du-dépôt> runmotion_exporter
-open runmotion_exporter/runmotion_exporter/runmotion_exporter.xcodeproj
+git clone <url-du-dépôt> runmotion-exporter
 ```
 
-### 2. Configurer la signature (une seule fois)
+Le projet Xcode n'est pas versionné : il est généré par XcodeGen depuis `project.yml`
+(`brew install xcodegen`), comme pour les autres apps personnelles.
 
-1. Xcode → **Settings… → Accounts** → **+** → ajouter ton identifiant
-   Apple. Une équipe « *Ton Nom* (Personal Team) » apparaît.
-2. Dans le projet, fais ceci pour **chacune des deux cibles**
-   **runmotion_exporter** (l'app) et **runmotion_exporterShare** (l'extension
-   de partage), onglet **Signing & Capabilities** :
-   - **Team** : choisis ta *Personal Team*.
-   - **Bundle Identifier** : il doit être unique au monde. Si Xcode
-     affiche une erreur, remplace `com.in.runmotion-exporter` par quelque
-     chose de personnel, par exemple `com.<ton-prénom>.runmotion-exporter`.
-     L'extension doit garder le même préfixe suivi de `.share`, par exemple
-     `com.<ton-prénom>.runmotion-exporter.share`.
-   - Vérifie que la capacité **HealthKit** est présente. Elle est déjà
-     déclarée dans les fichiers `.entitlements`. Si elle manque, ajoute-la
-     avec **+ Capability → HealthKit**.
+### 2. Signature
+
+La compilation, la signature et l'installation sont gérées par **`../ios-updater`** : voir son
+`README.md`. L'équipe (Personal Team) et le bundle id (`com.in.runmotion-exporter`, l'extension
+utilisant `<bundle id>.share`) sont déclarés dans `../ios-updater/ios-updater.conf`, qui génère
+`Config/Signing.local.xcconfig`. La capacité **HealthKit** est déclarée dans les fichiers
+`.entitlements`.
 
 ### 3. Préparer l'iPhone (une seule fois)
 
@@ -56,12 +49,14 @@ open runmotion_exporter/runmotion_exporter/runmotion_exporter.xcodeproj
 
 ### 4. Installer l'app
 
-1. Clique sur **Run** (▶, ou ⌘R).
-2. Au premier lancement, iOS refuse d'ouvrir l'app tant que le
-   développeur n'est pas approuvé. Va dans Réglages → Général → **VPN et
-   gestion de l'appareil**, touche ton identifiant Apple puis
-   **Faire confiance**.
-3. Relance l'app.
+```bash
+../ios-updater/ios-updater.sh --force runmotion-exporter
+```
+
+Au premier lancement, iOS refuse d'ouvrir l'app tant que le développeur n'est pas approuvé :
+Réglages → Général → **VPN et gestion de l'appareil**, touche ton identifiant Apple puis
+**Faire confiance**. Pour travailler dans Xcode : `open runmotion_exporter.xcodeproj` (après un
+premier passage d'ios-updater, ou `xcodegen generate`).
 
 ### 5. Autoriser l'accès aux entraînements
 
@@ -101,12 +96,35 @@ main dans Exercice.
 Les tests unitaires (cible `runmotion_exporterTests`) couvrent la
 conversion en WorkoutKit, l'interprétation de la sortie d'Apple
 Intelligence (répétitions, allures, plages de vitesse, distances) et le
-regroupement des lignes d'OCR. Lance-les avec **⌘U** dans Xcode.
+regroupement des lignes d'OCR. Lance-les avec **⌘U** dans Xcode (`runmotion_exporter.xcodeproj` généré à la racine).
+
+## Intégration continue
+
+Workflows GitHub Actions standard (skill `github-ci`, dans `.github/workflows/`) :
+
+| Workflow | Déclenchement | Rôle |
+|---|---|---|
+| `test.yml` (`Test`) | chaque push, toutes branches | génère le projet (XcodeGen), compile l'app et lance les tests unitaires sur un simulateur iPhone sans signature ; SwiftLint |
+| `auto_pr.yml` | push sur une autre branche que `main` | ouvre (ou met à jour) une PR vers `main`, description tirée des commits |
+| `release.yml` | `Test` réussi après un push sur `main` | tag semver (`feat:` → mineure, `BREAKING CHANGE` → majeure, sinon patch) + GitHub Release |
+
+Réglage GitHub requis pour `auto_pr.yml` : Settings → Actions → General → Workflow permissions →
+**Allow GitHub Actions to create and approve pull requests**. Messages de commit au format
+Conventional Commits (`feat:`, `fix:`, `ci:`…), dont dépend la version.
+
+SwiftLint (`.swiftlint.yml`, règles du skill apple-skills `ci-cd-setup`) : les violations existantes
+sont gelées dans `.swiftlint-baseline.json`, seules les nouvelles font échouer la CI. En local :
+`swiftlint lint --strict --baseline .swiftlint-baseline.json` (avec
+`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` si `xcode-select` pointe sur les Command
+Line Tools). Après correction de violations anciennes : `swiftlint lint --write-baseline .swiftlint-baseline.json`.
+
+Pas de déploiement TestFlight/App Store (compte Apple Developer payant requis) : l'installation sur
+l'iPhone reste assurée par `../ios-updater`.
 
 ## Limites du compte gratuit
 
 - **Validité de 7 jours** : passé ce délai, l'app ne s'ouvre plus tant
-  qu'elle n'a pas été réinstallée depuis Xcode (étape 4). Les
+  qu'elle n'a pas été réinstallée (étape 4). Les
   entraînements déjà programmés sur la montre restent disponibles. Ne
   supprime pas l'app avant de la réinstaller.
 - **Sans câble** : une fois jumelé en USB, l'iPhone reste disponible dans
@@ -119,31 +137,5 @@ regroupement des lignes d'OCR. Lance-les avec **⌘U** dans Xcode.
 
 ## Réinstallation automatique
 
-`scripts/reinstall-iphone.sh` recompile l'app avec un profil de signature
-neuf et la réinstalle par Wi-Fi si la version installée expire dans moins
-de 3 jours. `scripts/install-auto-reinstall.sh` le fait tourner chaque
-jour à 12h30 via `launchd`. Si le Mac dort à cette heure-là, la
-vérification a lieu au réveil. Une notification macOS indique le résultat.
-
-Mise en place, une seule fois, dans le Terminal du Mac :
-
-```bash
-# 1. Xcode (et non les seuls Command Line Tools) doit être l'outil actif
-xcode-select -p        # doit afficher …/Xcode.app/Contents/Developer
-# sinon : sudo xcode-select -s /Applications/Xcode.app
-
-# 2. Nom exact de l'iPhone
-xcrun devicectl list devices
-
-# 3. Premier passage manuel. Si macOS demande l'accès au trousseau pour
-#    « codesign », choisis « Toujours autoriser ».
-RUNMOTION_DEVICE="iPhone de David" scripts/reinstall-iphone.sh --force
-
-# 4. Tâche quotidienne
-scripts/install-auto-reinstall.sh "iPhone de David"
-```
-
-Conditions : session ouverte sur le Mac, Mac et iPhone sur le même Wi-Fi,
-compte Apple toujours connecté dans Xcode → Settings → Accounts.
-Journal : `~/Library/Logs/runmotion-reinstall.log`. Pour supprimer la
-tâche : `scripts/install-auto-reinstall.sh --uninstall`.
+Assurée par `../ios-updater` (tâche launchd commune à toutes les apps, deux passages par jour,
+renouvellement quand il reste moins de 72 h). Voir `../ios-updater/README.md`.

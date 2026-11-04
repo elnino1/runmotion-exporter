@@ -1,3 +1,10 @@
+# Signature : générée par ../ios-updater depuis ios-updater.conf
+Config/Signing.local.xcconfig
+
+# Projet Xcode : généré par XcodeGen depuis project.yml
+*.xcodeproj/
+*.xcworkspace/
+
 # macOS
 .DS_Store
 .AppleDouble
